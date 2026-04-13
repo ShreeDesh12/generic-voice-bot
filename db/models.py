@@ -44,7 +44,7 @@ class User(Base):
 
     documents = relationship("UserDocument", back_populates="user", cascade="all, delete-orphan")
     bots = relationship("Bot", back_populates="user", cascade="all, delete-orphan")
-    contacts = relationship("Contact", back_populates="user", cascade="all, delete-orphan")
+    contacts = relationship("Contact", back_populates="user", cascade="all, delete-orphan", foreign_keys="[Contact.user_id]")
 
 
 class DocumentLookup(Base):
@@ -92,6 +92,7 @@ class Bot(Base):
         ForeignKey("user_documents.id", ondelete="SET NULL"),
         nullable=True,
     )
+    title = Column(String(255), nullable=True)
     name = Column(String(255), nullable=False)
     email = Column(String(320), default="")
     phone = Column(String(50), default="")
@@ -99,6 +100,8 @@ class Bot(Base):
     gender = Column(String(20), default="unknown")
     voice_id = Column(String(100), default="")
     context = Column(Text, nullable=False)
+    version = Column(Integer, nullable=False, default=1)
+    is_active = Column(String(10), nullable=False, default="active")
     created_at = Column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -115,6 +118,9 @@ class Contact(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    caller_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     bot_id = Column(
         UUID(as_uuid=True), ForeignKey("bots.id", ondelete="CASCADE"), nullable=False
@@ -138,7 +144,8 @@ class Contact(Base):
         Index("ix_contacts_status_updated", "status", "updated_at"),
     )
 
-    user = relationship("User", back_populates="contacts")
+    user = relationship("User", back_populates="contacts", foreign_keys=[user_id])
+    caller = relationship("User", foreign_keys=[caller_user_id])
     bot = relationship("Bot", back_populates="contacts")
     transcripts = relationship(
         "Transcript", back_populates="contact", cascade="all, delete-orphan"

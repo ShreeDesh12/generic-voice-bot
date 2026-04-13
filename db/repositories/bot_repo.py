@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -14,6 +14,7 @@ async def save_bot(
     slug: str,
     name: str,
     context: str,
+    title: str = "",
     gender: str = "unknown",
     voice_id: str = "",
     email: str = "",
@@ -22,9 +23,25 @@ async def save_bot(
     user_id: uuid.UUID | None = None,
     document_id: uuid.UUID | None = None,
 ) -> Bot:
-    """Create a new bot record."""
+    """Create a new bot. Deactivates all other bots for this user and auto-increments version."""
+    version = 1
+    if user_id:
+        # Deactivate all existing bots for this user
+        await session.execute(
+            update(Bot)
+            .where(Bot.user_id == user_id, Bot.deleted_at.is_(None))
+            .values(is_active="inactive")
+        )
+        # Get next version number
+        result = await session.execute(
+            select(func.coalesce(func.max(Bot.version), 0))
+            .where(Bot.user_id == user_id)
+        )
+        version = result.scalar() + 1
+
     bot = Bot(
         slug=slug,
+        title=title or name,
         name=name,
         context=context,
         gender=gender,
@@ -34,6 +51,8 @@ async def save_bot(
         linkedin=linkedin,
         user_id=user_id,
         document_id=document_id,
+        version=version,
+        is_active="active",
     )
     session.add(bot)
     await session.commit()
@@ -41,7 +60,7 @@ async def save_bot(
 
 
 async def get_bot(session: AsyncSession, slug: str) -> dict | None:
-    """Load a bot by slug. Returns dict or None. Excludes soft-deleted."""
+    """Load a bot by slug. Excludes soft-deleted."""
     result = await session.execute(
         select(Bot)
         .options(joinedload(Bot.user))
@@ -53,6 +72,7 @@ async def get_bot(session: AsyncSession, slug: str) -> dict | None:
     return {
         "id": str(bot.id),
         "slug": bot.slug,
+        "title": bot.title or bot.name,
         "name": bot.name,
         "email": bot.email,
         "phone": bot.phone,
@@ -60,6 +80,8 @@ async def get_bot(session: AsyncSession, slug: str) -> dict | None:
         "gender": bot.gender,
         "voice_id": bot.voice_id,
         "context": bot.context,
+        "version": bot.version,
+        "is_active": bot.is_active,
         "user_id": str(bot.user_id) if bot.user_id else None,
         "picture_url": bot.user.picture_url if bot.user else None,
         "created_at": bot.created_at.isoformat(),
@@ -67,15 +89,16 @@ async def get_bot(session: AsyncSession, slug: str) -> dict | None:
 
 
 async def list_bots(session: AsyncSession) -> list[dict]:
-    """List all active bots, newest first."""
+    """List all active (not deleted, is_active) bots for the Connect page."""
     result = await session.execute(
         select(Bot)
-        .where(Bot.deleted_at.is_(None))
+        .where(Bot.deleted_at.is_(None), Bot.is_active == "active")
         .order_by(Bot.created_at.desc())
     )
     return [
         {
             "slug": b.slug,
+            "title": b.title or b.name,
             "name": b.name,
             "email": b.email,
             "gender": b.gender,
@@ -87,7 +110,7 @@ async def list_bots(session: AsyncSession) -> list[dict]:
 
 
 async def list_bots_for_user(session: AsyncSession, user_id: uuid.UUID) -> list[dict]:
-    """List active bots belonging to a specific user."""
+    """List all bots (active + inactive) belonging to a user."""
     result = await session.execute(
         select(Bot)
         .where(Bot.user_id == user_id, Bot.deleted_at.is_(None))
@@ -96,9 +119,12 @@ async def list_bots_for_user(session: AsyncSession, user_id: uuid.UUID) -> list[
     return [
         {
             "slug": b.slug,
+            "title": b.title or b.name,
             "name": b.name,
             "email": b.email,
             "gender": b.gender,
+            "version": b.version,
+            "is_active": b.is_active,
             "created_at": b.created_at.isoformat(),
         }
         for b in result.scalars().all()
@@ -111,11 +137,28 @@ async def slug_exists(session: AsyncSession, slug: str) -> bool:
 
 
 async def soft_delete(session: AsyncSession, slug: str, user_id: uuid.UUID) -> bool:
-    """Soft-delete a bot. Returns True if deleted, False if not found or not owned."""
     result = await session.execute(
         update(Bot)
         .where(Bot.slug == slug, Bot.user_id == user_id, Bot.deleted_at.is_(None))
         .values(deleted_at=datetime.now(timezone.utc))
+    )
+    await session.commit()
+    return result.rowcount > 0
+
+
+async def activate_bot(session: AsyncSession, slug: str, user_id: uuid.UUID) -> bool:
+    """Activate a bot and deactivate all others for this user."""
+    # Deactivate all
+    await session.execute(
+        update(Bot)
+        .where(Bot.user_id == user_id, Bot.deleted_at.is_(None))
+        .values(is_active="inactive")
+    )
+    # Activate the selected one
+    result = await session.execute(
+        update(Bot)
+        .where(Bot.slug == slug, Bot.user_id == user_id, Bot.deleted_at.is_(None))
+        .values(is_active="active")
     )
     await session.commit()
     return result.rowcount > 0

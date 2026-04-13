@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ bot.name }} - Portfolio Bot</title>
+    <link rel="stylesheet" href="/static/theme.css">
+    <script src="/static/theme.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -18,8 +20,8 @@
 
         /* --- Header --- */
         .header {
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
             padding: 0.6rem 1.5rem;
             display: flex;
             align-items: center;
@@ -27,18 +29,18 @@
             flex-shrink: 0;
         }
         .header-info h1 { font-size: 1rem; }
-        .header-info .meta { color: #94a3b8; font-size: 0.75rem; }
+        .header-info .meta { color: var(--text-secondary); font-size: 0.75rem; }
         .header-info .meta a { color: #3b82f6; text-decoration: none; }
         .back-link {
             margin-left: auto;
-            color: #94a3b8;
+            color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.8rem;
         }
-        .back-link:hover { color: #e2e8f0; }
+        .back-link:hover { color: var(--text-primary); }
         .end-chat-btn {
             background: #dc2626;
-            color: white;
+            color: #fff;
             border: none;
             padding: 0.35rem 0.7rem;
             border-radius: 6px;
@@ -46,7 +48,18 @@
             font-size: 0.75rem;
         }
         .end-chat-btn:hover { background: #b91c1c; }
-        .end-chat-btn:disabled { background: #475569; cursor: not-allowed; }
+        .end-chat-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
+        .back-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.35rem 0.7rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+        .back-btn:hover { color: var(--text-primary); border-color: var(--text-primary); }
 
         /* --- Visual Avatar Section --- */
         .visual-section {
@@ -81,14 +94,14 @@
         .visual-section.compact .bot-name { font-size: 1rem; margin-top: 0.3rem; }
         .bot-status {
             font-size: 0.8rem;
-            color: #94a3b8;
+            color: var(--text-secondary);
             margin-top: 0.15rem;
         }
         .contact-bar {
             display: flex;
             gap: 1.5rem;
             font-size: 0.75rem;
-            color: #64748b;
+            color: var(--text-muted);
             margin-top: 0.3rem;
         }
         .contact-bar a { color: #3b82f6; text-decoration: none; }
@@ -96,8 +109,8 @@
         /* --- Chat Toggle --- */
         .chat-toggle {
             background: none;
-            border: 1px solid #334155;
-            color: #94a3b8;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
             padding: 0.4rem 1.2rem;
             border-radius: 20px;
             cursor: pointer;
@@ -105,7 +118,7 @@
             margin-top: 0.8rem;
             transition: all 0.2s;
         }
-        .chat-toggle:hover { color: #e2e8f0; border-color: #3b82f6; }
+        .chat-toggle:hover { color: var(--text-primary); border-color: var(--accent); }
 
         /* --- Chat Area --- */
         .chat-wrapper {
@@ -138,21 +151,21 @@
             font-size: 0.9rem;
         }
         .message.user {
-            background: #3b82f6;
+            background: var(--accent);
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
         .message.assistant {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             align-self: flex-start;
             border-bottom-left-radius: 4px;
         }
         .message.typing {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             align-self: flex-start;
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-style: italic;
         }
 
@@ -162,8 +175,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: #1e293b;
-            border-top: 1px solid #334155;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
             z-index: 50;
         }
         .mode-toggle {
@@ -174,8 +187,8 @@
         }
         .mode-toggle button {
             background: none;
-            border: 1px solid #334155;
-            color: #64748b;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
             padding: 0.3rem 1.2rem;
             font-size: 0.75rem;
             cursor: pointer;
@@ -183,9 +196,9 @@
         .mode-toggle button:first-child { border-radius: 6px 0 0 6px; }
         .mode-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
         .mode-toggle button.active {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
         }
 
         /* Voice mode */
@@ -201,8 +214,8 @@
             height: 64px;
             border-radius: 50%;
             border: none;
-            background: #334155;
-            color: #e2e8f0;
+            background: var(--border);
+            color: var(--text-primary);
             font-size: 1.6rem;
             cursor: pointer;
             display: flex;
@@ -210,13 +223,13 @@
             justify-content: center;
             transition: all 0.2s;
         }
-        .voice-big-btn:hover { background: #475569; }
+        .voice-big-btn:hover { background: var(--text-muted); }
         .voice-big-btn.recording {
             background: #dc2626;
             animation: pulse-btn 1.5s infinite;
         }
         .voice-hint {
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 0.75rem;
             margin-top: 0.4rem;
         }
@@ -233,14 +246,14 @@
             flex: 1;
             padding: 0.6rem 0.8rem;
             border-radius: 8px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: #e2e8f0;
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-size: 0.9rem;
             outline: none;
         }
-        .text-input-area input:focus { border-color: #3b82f6; }
-        .text-input-area input::placeholder { color: #64748b; }
+        .text-input-area input:focus { border-color: var(--accent); }
+        .text-input-area input::placeholder { color: var(--text-muted); }
         .send-btn {
             padding: 0.6rem;
             border-radius: 8px;
@@ -252,11 +265,11 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: #3b82f6;
-            color: white;
+            background: var(--accent);
+            color: #fff;
         }
-        .send-btn:hover { background: #2563eb; }
-        .send-btn:disabled { background: #475569; cursor: not-allowed; }
+        .send-btn:hover { background: var(--accent-hover); }
+        .send-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
 
         @keyframes pulse-btn {
             0%, 100% { opacity: 1; }
@@ -279,8 +292,8 @@
         }
         .modal-overlay.active { display: flex; }
         .modal {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 12px;
             padding: 2rem;
             width: 90%;
@@ -291,13 +304,13 @@
             margin-bottom: 0.4rem;
         }
         .modal p {
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 0.85rem;
             margin-bottom: 1.2rem;
         }
         .modal label {
             display: block;
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 0.8rem;
             margin-bottom: 0.3rem;
             margin-top: 0.8rem;
@@ -306,13 +319,13 @@
             width: 100%;
             padding: 0.55rem 0.75rem;
             border-radius: 6px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: #e2e8f0;
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-size: 0.9rem;
             outline: none;
         }
-        .modal input:focus { border-color: #3b82f6; }
+        .modal input:focus { border-color: var(--accent); }
         .modal-btns {
             display: flex;
             gap: 0.75rem;
@@ -328,15 +341,15 @@
             font-weight: 500;
         }
         .btn-submit {
-            background: #3b82f6;
-            color: white;
+            background: var(--accent);
+            color: #fff;
         }
-        .btn-submit:hover { background: #2563eb; }
+        .btn-submit:hover { background: var(--accent-hover); }
         .btn-skip {
-            background: #334155;
-            color: #94a3b8;
+            background: var(--border);
+            color: var(--text-secondary);
         }
-        .btn-skip:hover { background: #475569; color: #e2e8f0; }
+        .btn-skip:hover { background: var(--text-muted); color: var(--text-primary); }
     </style>
 </head>
 <body>
@@ -346,7 +359,11 @@
             <div class="meta">{{ bot.gender | title }} voice</div>
         </div>
         <button class="end-chat-btn" id="endChatBtn" disabled>End Chat</button>
-        <a href="/portfolio-bot/" class="back-link">Create your own bot</a>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+            <span class="sun">&#9728;</span>
+            <span class="moon">&#9790;</span>
+        </button>
+        <button class="back-btn" id="backBtn">← Back</button>
     </div>
 
     <!-- Animated Avatar -->
@@ -487,6 +504,18 @@
         </div>
     </div>
 
+    <!-- Back Confirmation Modal -->
+    <div class="modal-overlay" id="backModal">
+        <div class="modal">
+            <h2>This call will be lost</h2>
+            <p>Would you like to save the conversation before leaving?</p>
+            <div class="modal-btns">
+                <button class="btn-skip" id="backDiscard">Discard</button>
+                <button class="btn-submit" id="backSave">Save Call</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const chatArea = document.getElementById('chatArea');
         const chatWrapper = document.getElementById('chatWrapper');
@@ -499,6 +528,8 @@
         const endChatBtn = document.getElementById('endChatBtn');
         const botStatus = document.getElementById('botStatus');
         const contactModal = document.getElementById('contactModal');
+        const backModal = document.getElementById('backModal');
+        const backBtn = document.getElementById('backBtn');
         const modeVoiceBtn = document.getElementById('modeVoice');
         const modeChatBtn = document.getElementById('modeChat');
         const voiceInputArea = document.getElementById('voiceInputArea');
@@ -508,6 +539,7 @@
         let sessionId = null;
         let chatExpanded = false;
         let currentMode = 'voice';
+        const loggedInUser = {% if user %}{"name": {{ user.name|tojson }}, "email": {{ user.email|tojson }}}{% else %}null{% endif %};
 
         // --- Mode toggle ---
         function setMode(mode) {
@@ -601,7 +633,7 @@
             setVisualState('thinking');
 
             try {
-                const resp = await fetch(`/portfolio-bot/${slug}/chat`, {
+                const resp = await fetch(`/${slug}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: text, session_id: sessionId }),
@@ -636,7 +668,7 @@
         async function playTTS(text) {
             setVisualState('speaking');
             try {
-                const resp = await fetch(`/portfolio-bot/${slug}/tts`, {
+                const resp = await fetch(`/${slug}/tts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text }),
@@ -732,7 +764,11 @@
         // --- End Chat with contact modal ---
         endChatBtn.addEventListener('click', () => {
             if (!sessionId) return;
-            contactModal.classList.add('active');
+            if (loggedInUser) {
+                finalizeChat(loggedInUser);
+            } else {
+                contactModal.classList.add('active');
+            }
         });
 
         async function finalizeChat(contactInfo) {
@@ -740,21 +776,17 @@
             endChatBtn.disabled = true;
             endChatBtn.textContent = 'Ending...';
             try {
-                await fetch(`/portfolio-bot/${slug}/end-chat`, {
+                await fetch(`/${slug}/end-chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session_id: sessionId, contact_info: contactInfo }),
                 });
-                expandChat();
-                addMessage('assistant', 'Chat ended. A transcript and summary have been sent to the bot owner. Thank you!');
                 sessionId = null;
-                sendBtn.disabled = true;
-                messageInput.disabled = true;
-                setVisualState('idle');
+                window.location.href = '/';
             } catch (e) {
                 endChatBtn.disabled = false;
+                endChatBtn.textContent = 'End Chat';
             }
-            endChatBtn.textContent = 'End Chat';
         }
 
         document.getElementById('modalSubmit').addEventListener('click', () => {
@@ -770,6 +802,29 @@
 
         document.getElementById('modalSkip').addEventListener('click', () => {
             finalizeChat(null);
+        });
+
+        // --- Back button with save/discard ---
+        backBtn.addEventListener('click', () => {
+            if (!sessionId) {
+                window.location.href = '/';
+                return;
+            }
+            backModal.classList.add('active');
+        });
+
+        document.getElementById('backSave').addEventListener('click', () => {
+            backModal.classList.remove('active');
+            if (loggedInUser) {
+                finalizeChat(loggedInUser);
+            } else {
+                contactModal.classList.add('active');
+            }
+        });
+
+        document.getElementById('backDiscard').addEventListener('click', () => {
+            backModal.classList.remove('active');
+            window.location.href = '/';
         });
 
         // --- Auto greeting on page load ---

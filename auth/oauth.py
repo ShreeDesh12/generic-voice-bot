@@ -45,10 +45,10 @@ async def auth_callback(request: Request):
         request.session["user_id"] = str(user.id)
         logger.info("User logged in: %s (%s)", user.email, user.id)
 
-    return RedirectResponse(url="/portfolio-bot/", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
 
 @router.get("/logout")
 async def logout(request: Request):
     request.session.clear()
-    return RedirectResponse(url="/portfolio-bot/", status_code=303)
+    return RedirectResponse(url="/", status_code=303)

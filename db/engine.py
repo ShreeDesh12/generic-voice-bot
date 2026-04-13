@@ -1,4 +1,7 @@
 import logging
+import subprocess
+import sys
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -12,11 +15,26 @@ engine = create_async_engine(config.DATABASE_URL, echo=False, future=True)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
+def _run_alembic_upgrade():
+    """Run alembic upgrade head as a subprocess to avoid async conflicts."""
+    project_root = Path(__file__).parent.parent
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=str(project_root),
+        capture_output=True,
+        text=True,
+        env={**__import__("os").environ, "DATABASE_URL": config.DATABASE_URL},
+    )
+    if result.returncode != 0:
+        logger.error("Alembic migration failed: %s", result.stderr)
+        raise RuntimeError(f"Alembic migration failed: {result.stderr}")
+    logger.info("Alembic output: %s", result.stdout.strip())
+
+
 async def init_db():
-    """Create all tables and seed lookup data."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables created")
+    """Run migrations and seed lookup data."""
+    _run_alembic_upgrade()
+    logger.info("Database migrations applied")
 
     # Seed document_lk
     async with async_session() as session:
