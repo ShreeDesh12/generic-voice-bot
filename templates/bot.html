@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ bot.name }} - Portfolio Bot</title>
+    <meta name="description" content="Chat with {{ bot.name }}'s AI voice bot. Ask about experience, skills, and projects.">
+    <meta property="og:title" content="{{ bot.get('title', bot.name) }} - My Voice">
+    <meta property="og:description" content="Chat with {{ bot.name }}'s AI voice bot. Ask about experience, skills, and projects.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{{ bot.picture_url or 'https://bot.buildwithshree.in/static/og-image.png' }}">
+    <meta property="og:url" content="https://bot.buildwithshree.in/{{ bot.slug }}">
+    <meta property="og:site_name" content="My Voice">
     <link rel="stylesheet" href="/static/theme.css">
     <script src="/static/theme.js"></script>
     <style>

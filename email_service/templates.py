@@ -97,7 +97,7 @@ def format_transcript_email(
         <h2 style="color:#333;margin-top:24px;">Full Transcript</h2>
         {messages_html}
         <hr style="margin-top:32px;border:none;border-top:1px solid #ddd;"/>
-        <p style="color:#999;font-size:0.85em;">Sent by Portfolio Voice Bot</p>
+        <p style="color:#999;font-size:0.85em;">Sent by My Voice</p>
     </body>
     </html>
     """

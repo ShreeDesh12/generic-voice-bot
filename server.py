@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
     checker_task.cancel()
 
 
-app = FastAPI(title="Portfolio Voice Bot", lifespan=lifespan)
+app = FastAPI(title="My Voice", lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=config.SESSION_SECRET_KEY)
 app.include_router(auth_router)
 
