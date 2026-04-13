@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ bot.name }} - Portfolio Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        .header {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 0.6rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .header-info h1 { font-size: 1rem; }
+        .header-info .meta { color: #94a3b8; font-size: 0.75rem; }
+        .header-info .meta a { color: #3b82f6; text-decoration: none; }
+        .back-link {
+            margin-left: auto;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .back-link:hover { color: #e2e8f0; }
+        .end-chat-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.35rem 0.7rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .end-chat-btn:hover { background: #b91c1c; }
+        .end-chat-btn:disabled { background: #475569; cursor: not-allowed; }
+
+        /* --- Visual Avatar Section --- */
+        .visual-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0 1rem;
+            flex-shrink: 0;
+            transition: padding 0.3s;
+        }
+        .visual-section.compact {
+            padding: 1rem 0 0.5rem;
+        }
+        .visual-container {
+            width: 220px;
+            height: 220px;
+            transition: width 0.3s, height 0.3s;
+        }
+        .visual-section.compact .visual-container {
+            width: 140px;
+            height: 140px;
+        }
+        .visual-container svg { width: 100%; height: 100%; }
+        .visual-container .vis { display: none; }
+        .visual-container .vis.active { display: block; }
+        .bot-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        .visual-section.compact .bot-name { font-size: 1rem; margin-top: 0.3rem; }
+        .bot-status {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.15rem;
+        }
+        .contact-bar {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.3rem;
+        }
+        .contact-bar a { color: #3b82f6; text-decoration: none; }
+
+        /* --- Chat Toggle --- */
+        .chat-toggle {
+            background: none;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 0.4rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 0.8rem;
+            transition: all 0.2s;
+        }
+        .chat-toggle:hover { color: #e2e8f0; border-color: #3b82f6; }
+
+        /* --- Chat Area --- */
+        .chat-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            transition: all 0.3s;
+        }
+        .chat-wrapper.collapsed {
+            flex: 0;
+            max-height: 0;
+            overflow: hidden;
+        }
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .message {
+            max-width: 75%;
+            padding: 0.6rem 0.9rem;
+            border-radius: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+        }
+        .message.user {
+            background: #3b82f6;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .message.assistant {
+            background: #1e293b;
+            border: 1px solid #334155;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .message.typing {
+            background: #1e293b;
+            border: 1px solid #334155;
+            align-self: flex-start;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* --- Bottom Bar (pinned) --- */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+            z-index: 50;
+        }
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            padding: 0.4rem 0;
+            gap: 0;
+        }
+        .mode-toggle button {
+            background: none;
+            border: 1px solid #334155;
+            color: #64748b;
+            padding: 0.3rem 1.2rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .mode-toggle button:first-child { border-radius: 6px 0 0 6px; }
+        .mode-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+        .mode-toggle button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* Voice mode */
+        .voice-input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0 1.2rem;
+        }
+        .voice-input-area.hidden { display: none; }
+        .voice-big-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            background: #334155;
+            color: #e2e8f0;
+            font-size: 1.6rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .voice-big-btn:hover { background: #475569; }
+        .voice-big-btn.recording {
+            background: #dc2626;
+            animation: pulse-btn 1.5s infinite;
+        }
+        .voice-hint {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-top: 0.4rem;
+        }
+
+        /* Chat/text mode */
+        .text-input-area {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 0.65rem 1.5rem;
+        }
+        .text-input-area.hidden { display: none; }
+        .text-input-area input {
+            flex: 1;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .text-input-area input:focus { border-color: #3b82f6; }
+        .text-input-area input::placeholder { color: #64748b; }
+        .send-btn {
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #3b82f6;
+            color: white;
+        }
+        .send-btn:hover { background: #2563eb; }
+        .send-btn:disabled { background: #475569; cursor: not-allowed; }
+
+        @keyframes pulse-btn {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .audio-player { display: none; }
+
+        /* Pad body bottom so content isn't hidden behind fixed bar */
+        body { padding-bottom: 120px; }
+
+        /* --- Contact Modal --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+        }
+        .modal p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 1.2rem;
+        }
+        .modal label {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            margin-top: 0.8rem;
+        }
+        .modal input {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .modal input:focus { border-color: #3b82f6; }
+        .modal-btns {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        .modal-btns button {
+            flex: 1;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .btn-submit {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-submit:hover { background: #2563eb; }
+        .btn-skip {
+            background: #334155;
+            color: #94a3b8;
+        }
+        .btn-skip:hover { background: #475569; color: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-info">
+            <h1>{{ bot.name }}</h1>
+            <div class="meta">{{ bot.gender | title }} voice</div>
+        </div>
+        <button class="end-chat-btn" id="endChatBtn" disabled>End Chat</button>
+        <a href="/portfolio-bot/" class="back-link">Create your own bot</a>
+    </div>
+
+    <!-- Animated Avatar -->
+    <div class="visual-section" id="visualSection">
+        <div class="visual-container">
+            <!-- Bloom (idle) -->
+            <div class="vis active" id="visBloom">
+                <svg viewBox="0 0 320 320">
+                    <defs>
+                        <circle id="bloom-clip-c" cx="50%" cy="50%" r="25%" />
+                        <clipPath id="bloom-clip"><use href="#bloom-clip-c" /></clipPath>
+                    </defs>
+                    <circle cx="50%" cy="50%" r="25%" fill="#3b82f6" fill-opacity="0.4">
+                        <animate attributeName="cx" values="50%;45%;40%;50%;45%;50%;40%;50%" dur="5s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="50%;45%;40%;50%;45%;50%;40%;50%" dur="5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="50%" cy="50%" r="25%" fill="#3b82f6" fill-opacity="0.4">
+                        <animate attributeName="cx" values="50%;55%;60%;50%;55%;50%;60%;50%" dur="5s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="50%;55%;60%;50%;55%;50%;60%;50%" dur="5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="50%" cy="50%" r="25%" fill="#3b82f6" fill-opacity="0.4">
+                        <animate attributeName="cx" values="50%;45%;40%;50%;45%;50%;40%;50%" dur="5s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="50%;55%;60%;50%;55%;50%;60%;50%" dur="5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="50%" cy="50%" r="25%" fill="#3b82f6" fill-opacity="0.4">
+                        <animate attributeName="cx" values="50%;55%;60%;50%;55%;50%;60%;50%" dur="5s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="50%;45%;40%;50%;45%;50%;40%;50%" dur="5s" repeatCount="indefinite" />
+                    </circle>
+                    {% if bot.picture_url %}
+                    <image height="50%" width="50%" x="25%" y="25%" href="{{ bot.picture_url }}" clip-path="url(#bloom-clip)" />
+                    {% else %}
+                    <circle cx="50%" cy="50%" r="25%" fill="#1e293b" />
+                    <text x="50%" y="54%" text-anchor="middle" fill="#e2e8f0" font-size="48" font-weight="600">{{ bot.name[0] | upper }}</text>
+                    {% endif %}
+                </svg>
+            </div>
+
+            <!-- Pulse (speaking / thinking) -->
+            <div class="vis" id="visPulse">
+                <svg viewBox="0 0 320 320">
+                    <defs>
+                        <circle id="pulse-clip-c" cx="50%" cy="50%" r="25%" />
+                        <clipPath id="pulse-clip"><use href="#pulse-clip-c" /></clipPath>
+                    </defs>
+                    <circle cx="50%" cy="50%" r="50%" fill="#3b82f6" fill-opacity="0.6">
+                        <animate attributeName="r" values="25%;32%;42%;25%;32%;25%;42%;25%" dur="1.5s" repeatCount="indefinite" />
+                    </circle>
+                    {% if bot.picture_url %}
+                    <image height="50%" width="50%" x="25%" y="25%" href="{{ bot.picture_url }}" clip-path="url(#pulse-clip)" />
+                    {% else %}
+                    <circle cx="50%" cy="50%" r="25%" fill="#1e293b" />
+                    <text x="50%" y="54%" text-anchor="middle" fill="#e2e8f0" font-size="48" font-weight="600">{{ bot.name[0] | upper }}</text>
+                    {% endif %}
+                </svg>
+            </div>
+
+            <!-- Ripple (listening) -->
+            <div class="vis" id="visRipple">
+                <svg viewBox="0 0 320 320">
+                    <defs>
+                        <circle id="ripple-clip-c" cx="50%" cy="50%" r="25%" />
+                        <clipPath id="ripple-clip"><use href="#ripple-clip-c" /></clipPath>
+                    </defs>
+                    <circle cx="50%" cy="50%" r="25%" fill="#dc2626" fill-opacity="1">
+                        <animate attributeName="r" values="25%;50%" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="fill-opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="50%" cy="50%" r="25%" fill="#dc2626" fill-opacity="1">
+                        <animate attributeName="r" values="25%;50%" dur="2s" begin="0.5s" repeatCount="indefinite" />
+                        <animate attributeName="fill-opacity" values="0.8;0" dur="2s" begin="0.5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="50%" cy="50%" r="25%" fill="#dc2626" fill-opacity="1">
+                        <animate attributeName="r" values="25%;50%" dur="2s" begin="1s" repeatCount="indefinite" />
+                        <animate attributeName="fill-opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
+                    </circle>
+                    {% if bot.picture_url %}
+                    <image height="50%" width="50%" x="25%" y="25%" href="{{ bot.picture_url }}" clip-path="url(#ripple-clip)" />
+                    {% else %}
+                    <circle cx="50%" cy="50%" r="25%" fill="#1e293b" />
+                    <text x="50%" y="54%" text-anchor="middle" fill="#e2e8f0" font-size="48" font-weight="600">{{ bot.name[0] | upper }}</text>
+                    {% endif %}
+                </svg>
+            </div>
+        </div>
+        <div class="bot-name">{{ bot.name }}</div>
+        <div class="bot-status" id="botStatus">Idle</div>
+        {% if bot.email or bot.phone or bot.linkedin %}
+        <div class="contact-bar">
+            {% if bot.email %}<span>{{ bot.email }}</span>{% endif %}
+            {% if bot.phone %}<span>{{ bot.phone }}</span>{% endif %}
+            {% if bot.linkedin %}<a href="{{ bot.linkedin }}">LinkedIn</a>{% endif %}
+        </div>
+        {% endif %}
+        <button class="chat-toggle" id="chatToggle">Show Chat</button>
+    </div>
+
+    <!-- Chat (collapsed by default) -->
+    <div class="chat-wrapper collapsed" id="chatWrapper">
+        <div class="chat-area" id="chatArea">
+            <div class="message assistant">
+                Hi! I'm {{ bot.name }}. How may I help you?
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" class="audio-player"></audio>
+
+    <div class="bottom-bar">
+        <div class="mode-toggle">
+            <button id="modeVoice" class="active">Voice</button>
+            <button id="modeChat">Chat</button>
+        </div>
+        <div class="voice-input-area" id="voiceInputArea">
+            <button class="voice-big-btn" id="voiceBtn" title="Tap to speak">🎤</button>
+            <div class="voice-hint">Tap to speak</div>
+        </div>
+        <div class="text-input-area hidden" id="textInputArea">
+            <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+            <button class="send-btn" id="sendBtn" title="Send">➤</button>
+        </div>
+    </div>
+
+    <!-- Contact Info Modal -->
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal">
+            <h2>Before you go...</h2>
+            <p>Leave your contact info so {{ bot.name }} can follow up with you.</p>
+            <label for="contactName">Name</label>
+            <input type="text" id="contactName" placeholder="Your name">
+            <label for="contactEmail">Email</label>
+            <input type="email" id="contactEmail" placeholder="you@example.com">
+            <label for="contactPhone">Phone</label>
+            <input type="tel" id="contactPhone" placeholder="+1 234 567 8900">
+            <div class="modal-btns">
+                <button class="btn-skip" id="modalSkip">Skip</button>
+                <button class="btn-submit" id="modalSubmit">Submit & End</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const chatWrapper = document.getElementById('chatWrapper');
+        const chatToggle = document.getElementById('chatToggle');
+        const visualSection = document.getElementById('visualSection');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const endChatBtn = document.getElementById('endChatBtn');
+        const botStatus = document.getElementById('botStatus');
+        const contactModal = document.getElementById('contactModal');
+        const modeVoiceBtn = document.getElementById('modeVoice');
+        const modeChatBtn = document.getElementById('modeChat');
+        const voiceInputArea = document.getElementById('voiceInputArea');
+        const textInputArea = document.getElementById('textInputArea');
+        const slug = '{{ bot.slug }}';
+        let isProcessing = false;
+        let sessionId = null;
+        let chatExpanded = false;
+        let currentMode = 'voice';
+
+        // --- Mode toggle ---
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'voice') {
+                modeVoiceBtn.classList.add('active');
+                modeChatBtn.classList.remove('active');
+                voiceInputArea.classList.remove('hidden');
+                textInputArea.classList.add('hidden');
+            } else {
+                modeChatBtn.classList.add('active');
+                modeVoiceBtn.classList.remove('active');
+                textInputArea.classList.remove('hidden');
+                voiceInputArea.classList.add('hidden');
+                expandChat();
+                messageInput.focus();
+            }
+        }
+        modeVoiceBtn.addEventListener('click', () => setMode('voice'));
+        modeChatBtn.addEventListener('click', () => setMode('chat'));
+
+        // --- Chat toggle ---
+        function expandChat() {
+            if (chatExpanded) return;
+            chatExpanded = true;
+            chatWrapper.classList.remove('collapsed');
+            visualSection.classList.add('compact');
+            chatToggle.textContent = 'Hide Chat';
+            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+        }
+
+        function collapseChat() {
+            chatExpanded = false;
+            chatWrapper.classList.add('collapsed');
+            visualSection.classList.remove('compact');
+            chatToggle.textContent = 'Show Chat';
+        }
+
+        chatToggle.addEventListener('click', () => {
+            chatExpanded ? collapseChat() : expandChat();
+        });
+
+        // --- Visual state ---
+        const visBloom = document.getElementById('visBloom');
+        const visPulse = document.getElementById('visPulse');
+        const visRipple = document.getElementById('visRipple');
+
+        function setVisualState(state) {
+            visBloom.classList.remove('active');
+            visPulse.classList.remove('active');
+            visRipple.classList.remove('active');
+            if (state === 'idle') {
+                visBloom.classList.add('active');
+                botStatus.textContent = 'Idle';
+            } else if (state === 'speaking') {
+                visPulse.classList.add('active');
+                botStatus.textContent = 'Speaking...';
+            } else if (state === 'listening') {
+                visRipple.classList.add('active');
+                botStatus.textContent = 'Listening...';
+            } else if (state === 'thinking') {
+                visPulse.classList.add('active');
+                botStatus.textContent = 'Thinking...';
+            }
+        }
+
+        // --- Chat ---
+        function addMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.textContent = text;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return div;
+        }
+
+        function removeTyping() {
+            const t = chatArea.querySelector('.typing');
+            if (t) t.remove();
+        }
+
+        async function sendMessage(text) {
+            if (!text.trim() || isProcessing) return;
+            isProcessing = true;
+            sendBtn.disabled = true;
+            expandChat();
+
+            addMessage('user', text);
+            messageInput.value = '';
+            addMessage('typing', 'Thinking...');
+            setVisualState('thinking');
+
+            try {
+                const resp = await fetch(`/portfolio-bot/${slug}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, session_id: sessionId }),
+                });
+                removeTyping();
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    addMessage('assistant', `Error: ${err.detail || 'Something went wrong'}`);
+                    setVisualState('idle');
+                    return;
+                }
+
+                const data = await resp.json();
+                if (data.session_id) {
+                    sessionId = data.session_id;
+                    endChatBtn.disabled = false;
+                }
+                addMessage('assistant', data.response);
+                playTTS(data.response);
+            } catch (e) {
+                removeTyping();
+                addMessage('assistant', `Error: ${e.message}`);
+                setVisualState('idle');
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        async function playTTS(text) {
+            setVisualState('speaking');
+            try {
+                const resp = await fetch(`/portfolio-bot/${slug}/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text }),
+                });
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    audioPlayer.src = URL.createObjectURL(blob);
+                    audioPlayer.play().catch(() => { setVisualState('idle'); });
+                    audioPlayer.onended = () => setVisualState('idle');
+                } else {
+                    setVisualState('idle');
+                }
+            } catch (e) {
+                console.warn('TTS failed:', e);
+                setVisualState('idle');
+            }
+        }
+
+        // Send on Enter or button
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(messageInput.value);
+            }
+        });
+        sendBtn.addEventListener('click', () => sendMessage(messageInput.value));
+
+        // --- Voice input ---
+        let recognition = null;
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            let finalTranscript = '';
+            let silenceTimer = null;
+            const SILENCE_DELAY = 2500;
+
+            recognition.onresult = (event) => {
+                let interim = '';
+                finalTranscript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+                messageInput.value = finalTranscript + interim;
+
+                if (silenceTimer) clearTimeout(silenceTimer);
+                silenceTimer = setTimeout(() => {
+                    recognition.stop();
+                    const text = finalTranscript || interim;
+                    if (text.trim()) {
+                        messageInput.value = '';
+                        sendMessage(text.trim());
+                    }
+                }, SILENCE_DELAY);
+            };
+
+            recognition.onerror = () => {
+                voiceBtn.classList.remove('recording');
+                setVisualState('idle');
+                if (silenceTimer) clearTimeout(silenceTimer);
+                finalTranscript = '';
+            };
+
+            recognition.onend = () => {
+                voiceBtn.classList.remove('recording');
+                if (silenceTimer) clearTimeout(silenceTimer);
+                finalTranscript = '';
+            };
+
+            voiceBtn.addEventListener('click', () => {
+                if (voiceBtn.classList.contains('recording')) {
+                    recognition.stop();
+                    setVisualState('idle');
+                } else {
+                    recognition.start();
+                    voiceBtn.classList.add('recording');
+                    setVisualState('listening');
+                }
+            });
+        } else {
+            // No speech recognition — default to chat mode
+            setMode('chat');
+            modeVoiceBtn.style.display = 'none';
+        }
+
+        // --- End Chat with contact modal ---
+        endChatBtn.addEventListener('click', () => {
+            if (!sessionId) return;
+            contactModal.classList.add('active');
+        });
+
+        async function finalizeChat(contactInfo) {
+            contactModal.classList.remove('active');
+            endChatBtn.disabled = true;
+            endChatBtn.textContent = 'Ending...';
+            try {
+                await fetch(`/portfolio-bot/${slug}/end-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, contact_info: contactInfo }),
+                });
+                expandChat();
+                addMessage('assistant', 'Chat ended. A transcript and summary have been sent to the bot owner. Thank you!');
+                sessionId = null;
+                sendBtn.disabled = true;
+                messageInput.disabled = true;
+                setVisualState('idle');
+            } catch (e) {
+                endChatBtn.disabled = false;
+            }
+            endChatBtn.textContent = 'End Chat';
+        }
+
+        document.getElementById('modalSubmit').addEventListener('click', () => {
+            const info = {};
+            const name = document.getElementById('contactName').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            const phone = document.getElementById('contactPhone').value.trim();
+            if (name) info.name = name;
+            if (email) info.email = email;
+            if (phone) info.phone = phone;
+            finalizeChat(Object.keys(info).length ? info : null);
+        });
+
+        document.getElementById('modalSkip').addEventListener('click', () => {
+            finalizeChat(null);
+        });
+
+        // --- Auto greeting on page load ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const greeting = "Hi, I am {{ bot.name }}. How may I help you?";
+            playTTS(greeting);
+        });
+
+        messageInput.focus();
+    </script>
+</body>
+</html>

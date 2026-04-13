@@ -1,0 +1,21 @@
+# Copy to: /etc/systemd/system/portfolio-bot.service
+# Then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable portfolio-bot
+#   sudo systemctl start portfolio-bot
+#   sudo systemctl status portfolio-bot
+
+[Unit]
+Description=Portfolio Voice Bot (FastAPI)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/portfolio-bot
+ExecStart=/home/ubuntu/portfolio-bot/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+EnvironmentFile=/home/ubuntu/portfolio-bot/.env
+
+[Install]
+WantedBy=multi-user.target
